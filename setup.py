@@ -56,7 +56,7 @@ with open("requirements.txt") as f:
                 requires.append(line)
 
 setup(
-    name="tor-api",
+    name="charlotte",
     version=__version__,
     description="A Redis-based JSON ODM with a memorable name.",
     long_description=long_description(),
