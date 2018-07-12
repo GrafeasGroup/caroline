@@ -1,8 +1,6 @@
 from charlotte.engine import Base
 
-__version__ = "0.0.1"
-
-__all__ = ["Prototype", "__version__"]
+__all__ = ["Prototype"]
 
 
 class Prototype(Base):
