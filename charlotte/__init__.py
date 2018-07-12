@@ -14,8 +14,7 @@ if __name__ == "__main__":
 
     class User(Prototype):
         def __init__(self, username):
-            super().__init__('redis')
-
+            super().__init__("redis")
 
     pam = User("pam")
     print(pam)
