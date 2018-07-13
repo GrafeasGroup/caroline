@@ -1,10 +1,8 @@
-class UserError(Exception):
-    def __init__(self, message, *args):
-        self.message = message  # bypass DeprecationWarning
-        super().__init__(message, *args)
+class Error(Exception):
+    pass
 
+class CharlotteConfigurationError(Error):
+    pass
 
-class CharlotteConnectionError(Exception):
-    def __init__(self, message, *args):
-        self.message = message  # bypass DeprecationWarning
-        super().__init__(message, *args)
+class CharlotteConnectionError(Error):
+    pass

@@ -13,37 +13,71 @@ except ImportError:
     pass
 
 from charlotte.errors import CharlotteConnectionError
+from charlotte.errors import CharlotteConfigurationError
 
 
 class Base(object):
     """
-    TODO: add general ideas of how this works
+    Welcome to the weirdness that is Charlotte.
+
+    Charlotte is a ODM that specializes in all things json, because
+    frankly I really don't like working with ORMs and the way that they're
+    normally handled in Python (thanks, Django!).
+
+    It's very simple: you create a class using a minimum of two objects:
+
+      * A dict of what you want your data to look like
+      * a dict of valid jsonschema that will be used to validate your data
+          on save
+
+    That's it. No models, no craziness, minor setup time, and hopefully pretty
+    simple to use. That's the goal, anyways.
+
+    Why Charlotte? I like Charlotte best. Because it's good. Good Charlotte.
     """
 
-    def __init__(self, redis_conn=None):
+    def __init__(self):
         """
-        Create our own Redis connection if one is not passed in.
-        We also assume that there is already a logging object created.
+        Everything that we should need is passed in by the user and found
+        under the `self` object. Here's what we should be seeing:
 
-        :param redis: Object; a `redis` instance.
+        class User(Prototype):
+            schema = {valid jsonschema}
+            default_structure = {valid dict}
+            # optional
+            redis_object = r
+
+        Because the user creates the class with those variables defined,
+        we can structure the parent around them. Fun!
         """
-        super().__init__()
-        if redis_conn:
-            self.r = redis_conn
-        else:
-            try:
+        import pdb
+
+        pdb.set_trace()
+        try:
+            if hasattr(self, "redis_conn"):
+                # We have something -- we'll run it through the same testing code to
+                # make sure that it works.
+                self.r = self.redis_conn
+            else:
                 url = os.getenv("REDIS_CONNECTION_URL", "redis://localhost:6379/0")
                 self.r = redis.StrictRedis.from_url(url)
-                self.r.ping()
-            except redis.exceptions.ConnectionError:
-                raise CharlotteConnectionError("Unable to reach Redis.")
+            self.r.ping()
+        except redis.exceptions.ConnectionError:
+            raise CharlotteConnectionError("Unable to reach Redis.")
+        except Exception as e:
+            raise CharlotteConfigurationError(
+                "Caught {} -- please pass in an instantiated Redis connection.".format(
+                    e
+                )
+            )
 
-        # self.create_if_not_found = create_if_not_found
-        # self.redis_key = '::user::{}'
-        self.redis_key = None
-        # self.user_data = self._load()
-        self.data = dict()
-        self.schema = None
+        if not hasattr(self, "default_structure"):
+            raise CharlotteConfigurationError
+        if not hasattr(self, "redis_key"):
+            self.redis_key = "::{}::{{}}".format(self.__class__.__name__.lower())
+        self.data = self.default_structure
+        if not hasattr(self, 'schema'):
+            self.schema = dict()
 
     def __repr__(self):
         return repr(self.data)
@@ -51,7 +85,7 @@ class Base(object):
     def get(self, key, default_return=None):
         return self.data.get(key, default_return)
 
-    def _load(self, requested_key):
+    def load(self, requested_key):
         """
         :return: Dict or None; the loaded information from Redis.
         """
