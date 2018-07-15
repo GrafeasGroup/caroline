@@ -32,7 +32,7 @@ class Base(object):
     Why Charlotte? I like Charlotte best. Because it's good. Good Charlotte.
     """
 
-    def __init__(self, id):
+    def __init__(self, record_id):
         """
         Everything that we should need is passed in by the user and found
         under the `self` object. Here's what we should be seeing:
@@ -70,7 +70,7 @@ class Base(object):
             raise CharlotteConfigurationError(
                 "Must have a default_structure dict, even if it's just {}!"
             )
-        if type(self.default_structure) != dict:
+        if not isinstance(self.default_structure, dict):
             raise CharlotteConfigurationError("default_structure must be a dict!")
 
         if not hasattr(self, "redis_key"):
@@ -86,9 +86,9 @@ class Base(object):
         if not hasattr(self, "schema"):
             self.schema = None
 
-        self.id = id
+        self.record_id = record_id
 
-        result = self._load(self.id)
+        result = self._load(self.record_id)
         if result:
             self.data = result
         else:
@@ -122,7 +122,7 @@ class Base(object):
 
     def save(self):
         if self.validate():
-            self.r.set(self.redis_key.format(self.id), json.dumps(self.data))
+            self.r.set(self.redis_key.format(self.record_id), json.dumps(self.data))
 
     def update(self, key, value):
         self.data[key] = value
