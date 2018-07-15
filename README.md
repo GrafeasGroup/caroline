@@ -61,6 +61,8 @@ x = Dog('sam')
 print(x)
 # {'breed': 'mutt', 'age': 5, 'name': 'Sam'}
 ```
+If you create an instance of your class with an ID that isn't in Redis, then it will instantiate it using the `default_structure` dict that you defined in the class. 
+
 Charlotte will automatically handle its own Redis connections, but if you've got a custom one, feel free to pass it in through your model:
 
 ```python
