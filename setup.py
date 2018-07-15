@@ -35,7 +35,7 @@ def long_description():
 
 
 testing_deps = ["pytest", "pytest-cov"]
-dev_helper_deps = ["better-exceptions", "black"]
+dev_helper_deps = ["black"]
 
 requires = []
 dep_links = []
@@ -63,12 +63,13 @@ setup(
     author_email="joe.kaufeld@gmail.com",
     license="MIT",
     classifiers=[
-        "Development Status :: 1 - Planning",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: End Users/Desktop",
-        "Topic :: Communications :: BBS",
         "License :: OSI Approved :: MIT License",
+        "Framework :: Pytest",
+        "Topic :: Database :: Front-Ends"
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
     ],
     keywords="",
     packages=find_packages(exclude=["test", "test.*", "*.test", "*.test.*"]),

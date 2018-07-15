@@ -1,19 +1,15 @@
 import json
 import logging
-import os
 
 import redis
 from jsonschema import validate
 
-try:
-    import better_exceptions
-
-    better_exceptions.MAX_LENGTH = None
-except ImportError:
-    pass
-
-from charlotte.errors import CharlotteConnectionError
 from charlotte.errors import CharlotteConfigurationError
+from charlotte.errors import CharlotteConnectionError
+
+# we don't actually connect to redis until we use the object; putting it here
+# means that we have the connection pool available if we need it.
+pool = redis.ConnectionPool(host="localhost", port=6379, db=0)
 
 
 class Base(object):
@@ -36,31 +32,30 @@ class Base(object):
     Why Charlotte? I like Charlotte best. Because it's good. Good Charlotte.
     """
 
-    def __init__(self):
+    def __init__(self, id):
         """
         Everything that we should need is passed in by the user and found
         under the `self` object. Here's what we should be seeing:
 
         class User(Prototype):
-            schema = {valid jsonschema}
             default_structure = {valid dict}
-            # optional
-            redis_object = r
 
+            # optional flags
+            schema = {valid jsonschema}
+            redis_object = r
+            redis_key = "user-obj"
+
+        The schema is technically optional, but we want people to use it.
         Because the user creates the class with those variables defined,
         we can structure the parent around them. Fun!
         """
-        import pdb
-
-        pdb.set_trace()
         try:
             if hasattr(self, "redis_conn"):
                 # We have something -- we'll run it through the same testing code to
                 # make sure that it works.
                 self.r = self.redis_conn
             else:
-                url = os.getenv("REDIS_CONNECTION_URL", "redis://localhost:6379/0")
-                self.r = redis.StrictRedis.from_url(url)
+                self.r = redis.Redis(connection_pool=pool)
             self.r.ping()
         except redis.exceptions.ConnectionError:
             raise CharlotteConnectionError("Unable to reach Redis.")
@@ -72,20 +67,49 @@ class Base(object):
             )
 
         if not hasattr(self, "default_structure"):
-            raise CharlotteConfigurationError
+            raise CharlotteConfigurationError(
+                "Must have a default_structure dict, even if it's just {}!"
+            )
+        if type(self.default_structure) != dict:
+            raise CharlotteConfigurationError("default_structure must be a dict!")
+
         if not hasattr(self, "redis_key"):
-            self.redis_key = "::{}::{{}}".format(self.__class__.__name__.lower())
-        self.data = self.default_structure
-        if not hasattr(self, 'schema'):
-            self.schema = dict()
+            # if we don't have a redis_key passed in, then we use the name of the
+            # class that the developer defined as the key.
+            self.redis_key = self.__class__.__name__.lower()
+        else:
+            self.redis_key = str(self.redis_key)
+        # note: this is a way of allowing us to only format the first field.
+        # It'll render out as "::thing::{}" which we can then format again.
+        self.redis_key = "::{}::{{}}".format(self.redis_key)
+
+        if not hasattr(self, "schema"):
+            self.schema = None
+
+        self.id = id
+
+        result = self._load(self.id)
+        if result:
+            self.data = result
+        else:
+            self.data = self.default_structure
 
     def __repr__(self):
         return repr(self.data)
 
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, item):
+        return self.data[item]
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
     def get(self, key, default_return=None):
         return self.data.get(key, default_return)
 
-    def load(self, requested_key):
+    def _load(self, requested_key):
         """
         :return: Dict or None; the loaded information from Redis.
         """
@@ -96,20 +120,21 @@ class Base(object):
 
         return json.loads(result.decode())
 
-    def save(self, keyname):
+    def save(self):
         if self.validate():
-            self.r.set(self.redis_key.format(keyname), json.dumps(self.data))
+            self.r.set(self.redis_key.format(self.id), json.dumps(self.data))
 
     def update(self, key, value):
         self.data[key] = value
-
-    def _create_default_data(self):
-        self.data = dict()
-        self.data.update({"username": self.username})
-        return self.data
 
     def to_dict(self):
         return self.data
 
     def validate(self):
-        return validate(self.data, self.schema)
+        # validate will return None if it succeeds or throw an exception, so if
+        # we get to the return statement then we're good.
+        # Alternatively, they can just not give us a schema -- in which case,
+        # just return True and don't sweat it.
+        if self.schema:
+            validate(self.data, self.schema)
+        return True
