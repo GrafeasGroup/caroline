@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 
 import redis
 from jsonschema import validate
@@ -7,9 +8,39 @@ from jsonschema import validate
 from charlotte.errors import CharlotteConfigurationError
 from charlotte.errors import CharlotteConnectionError
 
-# we don't actually connect to redis until we use the object; putting it here
-# means that we have the connection pool available if we need it.
-pool = redis.ConnectionPool(host="localhost", port=6379, db=0)
+charlotte_redis_has_been_assigned = False
+charlotte_redis_pool = None
+
+
+def get_redis_instance():
+    global charlotte_redis_has_been_assigned
+    global charlotte_redis_pool
+    # We want to keep a very tight handle on exactly how many redis connections
+    # we're creating / maintaining. When we got through this method the first
+    # time, when a derivative class has been created, we want to make the pool
+    # and save it. For every class instantiated after that, we return the
+    # created pool instead of making a new one.
+    if charlotte_redis_has_been_assigned:
+        logging.debug('Charlotte: returning existing Redis pool')
+        return charlotte_redis_pool
+
+    # first let's see if they defined a global redis URL, something like
+    # "redis://localhost:6379/0" as an environment variable. If they did and they
+    # still don't pass in a specific redis instance to a model, then we can use
+    # that.
+    url = os.getenv("CHARLOTTE_REDIS_URL", None)
+    # we don't actually connect to redis until we use the object; putting it here
+    # means that we have the connection pool available if we need it.
+    if url:
+        logging.debug("Charlotte: got Redis env URL {}".format(url))
+        # gotta set that variable so we have it next time
+        charlotte_redis_pool = redis.ConnectionPool.from_url(url)
+    else:
+        logging.debug("Charlotte: using default Redis connection settings")
+        charlotte_redis_pool = redis.ConnectionPool(host="localhost", port=6379, db=0)
+
+    charlotte_redis_has_been_assigned = True
+    return charlotte_redis_pool
 
 
 class Base(object):
@@ -55,7 +86,7 @@ class Base(object):
                 # make sure that it works.
                 self.r = self.redis_conn
             else:
-                self.r = redis.Redis(connection_pool=pool)
+                self.r = redis.Redis(connection_pool=get_redis_instance())
             self.r.ping()
         except redis.exceptions.ConnectionError:
             raise CharlotteConnectionError("Unable to reach Redis.")
