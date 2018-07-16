@@ -169,3 +169,9 @@ class Base(object):
         if self.schema:
             validate(self.data, self.schema)
         return True
+
+    def all_keys(self):
+        # returns a generator from the redis library that the developer can
+        # handle how they wish -- this will return all of the keys matching
+        # this model type currently stored in Redis.
+        return self.r.scan_iter("{}*".format(self.redis_key))
