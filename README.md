@@ -21,7 +21,7 @@ The only thing you need to do to get started is `from charlotte import Prototype
 from charlotte import Prototype
 
 class Dog(Prototype):
-    default_structure = {
+    default = {
         "breed": "",
         "age": 1,
         "name": ""
@@ -61,14 +61,14 @@ x = Dog('sam')
 print(x)
 # {'breed': 'mutt', 'age': 5, 'name': 'Sam'}
 ```
-If you create an instance of your class with an ID that isn't in Redis, then it will instantiate it using the `default_structure` dict that you defined in the class. 
+If you create an instance of your class with an ID that isn't in Redis, then it will instantiate it using the `default` dict that you defined in the class. 
 
 Charlotte will automatically handle its own Redis connections, but if you've got a custom one, feel free to pass it in through your model:
 
 ```python
 class Cat(Prototype):
     redis_conn = your_redis_connection
-    default_structure = {}
+    default = {}
 ```
 If you don't want to pass a specific connection with each model, we don't blame you; if you format your Redis address as a URL, (e.g. `redis://localhost:6379/0`) then Charlotte will pick that up if you set it as the environment variable `CHARLOTTE_REDIS_URL`.
 

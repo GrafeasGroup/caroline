@@ -69,7 +69,7 @@ class Base(object):
         under the `self` object. Here's what we should be seeing:
 
         class User(Prototype):
-            default_structure = {valid dict}
+            default = {valid dict}
 
             # optional flags
             schema = {valid jsonschema}
@@ -97,12 +97,12 @@ class Base(object):
                 )
             )
 
-        if not hasattr(self, "default_structure"):
+        if not hasattr(self, "default"):
             raise CharlotteConfigurationError(
-                "Must have a default_structure dict, even if it's just {}!"
+                "Must have a default dict, even if it's just {}!"
             )
-        if not isinstance(self.default_structure, dict):
-            raise CharlotteConfigurationError("default_structure must be a dict!")
+        if not isinstance(self.default, dict):
+            raise CharlotteConfigurationError("default must be a dict!")
 
         if not hasattr(self, "redis_key"):
             # if we don't have a redis_key passed in, then we use the name of the
@@ -123,7 +123,7 @@ class Base(object):
         if result:
             self.data = result
         else:
-            self.data = self.default_structure
+            self.data = self.default
 
     def __repr__(self):
         return repr(self.data)
