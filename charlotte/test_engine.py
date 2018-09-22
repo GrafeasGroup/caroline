@@ -1,27 +1,30 @@
+from unittest.mock import MagicMock
 from unittest.mock import patch
 
 # noinspection PyUnresolvedReferences
-import redis
+import elasticsearch
 import pytest
+# noinspection PyUnresolvedReferences
+import redis
 
 from charlotte.engine import Base
 from charlotte.errors import CharlotteConfigurationError
 
 
-@patch("redis.Redis")
 @patch("charlotte.engine.Base._load", return_value={"hello": "world"})
-def test_generic_launch(a, b):
+def test_generic_launch(a):
     class x(Base):
+        redis_conn = MagicMock()
         default = {}
 
     y = x("asdf")
     assert y.to_dict() == {"hello": "world"}
 
 
-@patch("redis.Redis")
 @patch("charlotte.engine.Base._load", return_value=None)
-def test_default_loading(a, b):
+def test_default_loading(a):
     class x(Base):
+        redis_conn = MagicMock()
         default = {"yo": "world"}
 
     y = x("asdf")
@@ -30,10 +33,10 @@ def test_default_loading(a, b):
     assert y.to_dict() == {"yo": "world"}
 
 
-@patch("redis.Redis")
 @patch("charlotte.engine.Base._load", return_value=None)
-def test_redis_key_var(a, b):
+def test_redis_key_var(a):
     class x(Base):
+        redis_conn = MagicMock()
         default = {"yo": "world"}
         db_key = "snarfleblat"
 
@@ -43,10 +46,10 @@ def test_redis_key_var(a, b):
     assert y.db_key_unformatted == "snarfleblat"
 
 
-@patch("redis.Redis")
 @patch("charlotte.engine.Base._load", return_value=None)
-def test_update_methods(a, b):
+def test_update_methods(a):
     class x(Base):
+        redis_conn = MagicMock()
         default = {"yo": "world"}
 
     y = x("asdf")
@@ -58,11 +61,10 @@ def test_update_methods(a, b):
     assert y.to_dict() == {"yo": "general kenobi"}
 
 
-@patch("redis.Redis")
-def test_required_default(a):
+def test_required_default():
     with pytest.raises(CharlotteConfigurationError):
 
         class x(Base):
-            pass
+            redis_conn = MagicMock()
 
         y = x("asdf")
