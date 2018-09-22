@@ -35,7 +35,7 @@ def test_default_structure_loading(a, b):
 def test_redis_key_var(a, b):
     class x(Base):
         default_structure = {"yo": "world"}
-        redis_key = "snarfleblat"
+        db_key = "snarfleblat"
 
     y = x("asdf")
 

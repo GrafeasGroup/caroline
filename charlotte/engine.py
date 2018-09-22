@@ -1,15 +1,104 @@
 import json
 import logging
+import os
 
 import redis
 from jsonschema import validate
+import elasticsearch
+from elasticsearch import Elasticsearch
+from addict import Dict
 
 from charlotte.errors import CharlotteConfigurationError
 from charlotte.errors import CharlotteConnectionError
 
+log = logging.getLogger(__name__)
+
+config = Dict()
+config.default_db = "elasticsearch"
+config.redis_default_url = "redis://localhost:6379/0"
+# TODO: accept additional config vars for elasticsearch besides just URL
+config.elasticsearch_default_url = "localhost:9200"
+
 # we don't actually connect to redis until we use the object; putting it here
 # means that we have the connection pool available if we need it.
-pool = redis.ConnectionPool(host="localhost", port=6379, db=0)
+# Let's see if we have a Redis environment variable set!
+redis_env_addr = os.environ.get("CHARLOTTE_REDIS_URL", config.redis_default_url)
+pool = redis.ConnectionPool.from_url(redis_env_addr)
+
+# While we're at it, Elasticsearch doesn't use connection pools the same way
+# that Redis does, so we'll set up the client here and have all the active ES
+# models use it. We won't check to see if it's actually valid unless it's called.
+es_env_addr = os.environ.get(
+    "CHARLOTTE_ELASTICSEARCH_URL", config.elasticsearch_default_url
+)
+es_charlotte_connection = Elasticsearch(es_env_addr)
+
+
+def validate_config():
+    if config.default_db not in ["redis", "elasticsearch"]:
+        raise CharlotteConfigurationError(
+            "Default DB has been changed to invalid option; use either "
+            '"elasticsearch" or "redis"'
+        )
+
+
+class redis_db(object):
+    def __init__(self, redis_conn=None):
+        try:
+            if redis_conn:
+                # We have something -- we'll run it through the same testing code to
+                # make sure that it works.
+                self.r = redis_conn
+            else:
+                self.r = redis.Redis(connection_pool=pool)
+            self.r.ping()
+        except redis.exceptions.ConnectionError:
+            raise CharlotteConnectionError("Unable to reach Redis.")
+        except Exception as e:
+            raise CharlotteConfigurationError(
+                "Caught {} -- please pass in an instantiated Redis "
+                "connection.".format(e)
+            )
+
+    def load(self, scope, key):
+        """
+        :return: Dict or None; the loaded information from Redis.
+        """
+        result = self.r.get(scope.db_key.format(key))
+        if not result:
+            log.debug("Key {} not found, returning None.".format(key))
+            return None
+
+        return json.loads(result.decode())
+
+    def save(self, scope):
+        self.r.set(scope.db_key.format(scope.id), json.dumps(scope.data))
+
+
+class elasticsearch_db(object):
+    def __init__(self, es_conn=None):
+        try:
+            if es_conn:
+                self.es = es_conn
+            else:
+                # we didn't get anything, so we'll piggyback off of the connection
+                # that charlotte creates
+                self.es = es_charlotte_connection
+            log.info("Trying to connect to Elasticsearch...")
+            self.es.info()
+            log.info("Connection complete!")
+        except elasticsearch.exceptions.ConnectionError:
+            # Elasticsearch client raises _a lot_ of nested errors in this instance.
+            # Nuke them all with extreme prejudice.
+            raise CharlotteConnectionError(
+                "Cannot reach Elasticsearch! Is it running?"
+            ) from None
+
+    def load(self, scope, key):
+        pass
+
+    def save(self, scope):
+        pass
 
 
 class Base(object):
@@ -42,29 +131,37 @@ class Base(object):
 
             # optional flags
             schema = {valid jsonschema}
-            redis_object = r
-            redis_key = "user-obj"
+            db_key = "user-obj"
+
+            redis_conn = r
+            OR
+            elasticsearch_conn = e
 
         The schema is technically optional, but we want people to use it.
+        Why else use a library like Charlotte?
+
         Because the user creates the class with those variables defined,
         we can structure the parent around them. Fun!
         """
-        try:
-            if hasattr(self, "redis_conn"):
-                # We have something -- we'll run it through the same testing code to
-                # make sure that it works.
-                self.r = self.redis_conn
-            else:
-                self.r = redis.Redis(connection_pool=pool)
-            self.r.ping()
-        except redis.exceptions.ConnectionError:
-            raise CharlotteConnectionError("Unable to reach Redis.")
-        except Exception as e:
+        # First things first! What DB are we using? Gonna do this the long
+        # way for legibility purposes and because the hasattr call is not
+        # expensive.
+        if hasattr(self, "redis_conn") and hasattr(self, "elasticsearch_conn"):
             raise CharlotteConfigurationError(
-                "Caught {} -- please pass in an instantiated Redis connection.".format(
-                    e
-                )
+                "Received both a Redis connection and an Elasticsearch connection. "
+                "You need to use one or the other -- Charlotte does not support "
+                "handling both at the same time."
             )
+
+        if hasattr(self, "redis_conn"):
+            self.db = redis_db(self.redis_conn)
+
+        if hasattr(self, "elasticsearch_conn"):
+            self.db = elasticsearch_db(self.elasticsearch_conn)
+
+        if not hasattr(self, "db"):
+            log.debug("No db connection passed; defaulting to Elasticsearch")
+            self.db = elasticsearch_db()
 
         if not hasattr(self, "default_structure"):
             raise CharlotteConfigurationError(
@@ -73,15 +170,16 @@ class Base(object):
         if type(self.default_structure) != dict:
             raise CharlotteConfigurationError("default_structure must be a dict!")
 
-        if not hasattr(self, "redis_key"):
-            # if we don't have a redis_key passed in, then we use the name of the
+        if not hasattr(self, "db_key"):
+            # if we don't have a db_key passed in, then we use the name of the
             # class that the developer defined as the key.
-            self.redis_key = self.__class__.__name__.lower()
+            self.db_key = self.__class__.__name__.lower()
+            log.debug('No db_key passed; defaulting to key "{}"'.format(self.db_key))
         else:
-            self.redis_key = str(self.redis_key)
+            self.db_key = str(self.db_key)
         # note: this is a way of allowing us to only format the first field.
         # It'll render out as "::thing::{}" which we can then format again.
-        self.redis_key = "::{}::{{}}".format(self.redis_key)
+        self.db_key = "::{}::{{}}".format(self.db_key)
 
         if not hasattr(self, "schema"):
             self.schema = None
@@ -111,18 +209,13 @@ class Base(object):
 
     def _load(self, requested_key):
         """
-        :return: Dict or None; the loaded information from Redis.
+        :return: Dict or None; the loaded information from the db.
         """
-        result = self.r.get(self.redis_key.format(requested_key))
-        if not result:
-            logging.debug("Key {} not found, returning None.".format(requested_key))
-            return None
-
-        return json.loads(result.decode())
+        return self.db.load(self, requested_key)
 
     def save(self):
         if self.validate():
-            self.r.set(self.redis_key.format(self.id), json.dumps(self.data))
+            self.db.save(self)
 
     def update(self, key, value):
         self.data[key] = value
