@@ -12,7 +12,7 @@ from charlotte.errors import CharlotteConfigurationError
 @patch("charlotte.engine.Base._load", return_value={"hello": "world"})
 def test_generic_launch(a, b):
     class x(Base):
-        default_structure = {}
+        default = {}
 
     y = x("asdf")
     assert y.to_dict() == {"hello": "world"}
@@ -20,9 +20,9 @@ def test_generic_launch(a, b):
 
 @patch("redis.Redis")
 @patch("charlotte.engine.Base._load", return_value=None)
-def test_default_structure_loading(a, b):
+def test_default_loading(a, b):
     class x(Base):
-        default_structure = {"yo": "world"}
+        default = {"yo": "world"}
 
     y = x("asdf")
     # asdf didn't come back with anything because _load failed, so it should
@@ -34,8 +34,8 @@ def test_default_structure_loading(a, b):
 @patch("charlotte.engine.Base._load", return_value=None)
 def test_redis_key_var(a, b):
     class x(Base):
-        default_structure = {"yo": "world"}
-        db_key = "snarfleblat"
+        default = {"yo": "world"}
+        redis_key = "snarfleblat"
 
     y = x("asdf")
 
@@ -46,7 +46,7 @@ def test_redis_key_var(a, b):
 @patch("charlotte.engine.Base._load", return_value=None)
 def test_update_methods(a, b):
     class x(Base):
-        default_structure = {"yo": "world"}
+        default = {"yo": "world"}
 
     y = x("asdf")
 
@@ -58,7 +58,7 @@ def test_update_methods(a, b):
 
 
 @patch("redis.Redis")
-def test_required_default_structure(a):
+def test_required_default(a):
     with pytest.raises(CharlotteConfigurationError):
 
         class x(Base):

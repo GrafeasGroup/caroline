@@ -121,13 +121,13 @@ class Base(object):
     Why Charlotte? I like Charlotte best. Because it's good. Good Charlotte.
     """
 
-    def __init__(self, id):
+    def __init__(self, record_id):
         """
         Everything that we should need is passed in by the user and found
         under the `self` object. Here's what we should be seeing:
 
         class User(Prototype):
-            default_structure = {valid dict}
+            default = {valid dict}
 
             # optional flags
             schema = {valid jsonschema}
@@ -163,12 +163,13 @@ class Base(object):
             log.debug("No db connection passed; defaulting to Elasticsearch")
             self.db = elasticsearch_db()
 
-        if not hasattr(self, "default_structure"):
+        if not hasattr(self, "default"):
+
             raise CharlotteConfigurationError(
-                "Must have a default_structure dict, even if it's just {}!"
+                "Must have a default dict, even if it's just {}!"
             )
-        if type(self.default_structure) != dict:
-            raise CharlotteConfigurationError("default_structure must be a dict!")
+        if not isinstance(self.default, dict):
+            raise CharlotteConfigurationError("default must be a dict!")
 
         if not hasattr(self, "db_key"):
             # if we don't have a db_key passed in, then we use the name of the
@@ -184,13 +185,13 @@ class Base(object):
         if not hasattr(self, "schema"):
             self.schema = None
 
-        self.id = id
+        self.record_id = record_id
 
-        result = self._load(self.id)
+        result = self._load(self.record_id)
         if result:
             self.data = result
         else:
-            self.data = self.default_structure
+            self.data = self.default
 
     def __repr__(self):
         return repr(self.data)
@@ -217,6 +218,7 @@ class Base(object):
         if self.validate():
             self.db.save(self)
 
+
     def update(self, key, value):
         self.data[key] = value
 
@@ -231,3 +233,9 @@ class Base(object):
         if self.schema:
             validate(self.data, self.schema)
         return True
+
+    def all_keys(self):
+        # returns a generator from the redis library that the developer can
+        # handle how they wish -- this will return all of the keys matching
+        # this model type currently stored in Redis.
+        return self.r.scan_iter("{}*".format(self.redis_key))

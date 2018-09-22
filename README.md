@@ -21,7 +21,7 @@ The only thing you need to do to get started is `from charlotte import Prototype
 from charlotte import Prototype
 
 class Dog(Prototype):
-    default_structure = {
+    default = {
         "breed": "",
         "age": 1,
         "name": ""
@@ -61,14 +61,22 @@ x = Dog('sam')
 print(x)
 # {'breed': 'mutt', 'age': 5, 'name': 'Sam'}
 ```
+If you create an instance of your class with an ID that isn't in Redis, then it will instantiate it using the `default` dict that you defined in the class. 
+
 Charlotte will automatically handle its own Redis connections, but if you've got a custom one, feel free to pass it in through your model:
 
 ```python
 class Cat(Prototype):
     redis_conn = your_redis_connection
-    default_structure = {}
+    default = {}
 ```
+<<<<<<< HEAD
 Charlotte also gives you the ability to choose your database root key names; by default, it will be the name of the class model you create. So for example, if you have a class named Dog with the record ID of 'sam' from above, then the record in the DB will have the key of `::dog::sam`. You can adjust the first part by adding another parameter: `db_key`. Don't bother with this unless you have a good reason to change it.
+=======
+If you don't want to pass a specific connection with each model, we don't blame you; if you format your Redis address as a URL, (e.g. `redis://localhost:6379/0`) then Charlotte will pick that up if you set it as the environment variable `CHARLOTTE_REDIS_URL`.
+
+Charlotte also gives you the ability to choose your database root key names; by default, it will be the name of the class model you create. So for example, if you have a class named Dog with the record ID of 'sam' from above, then the record in Redis will have the key of `::dog::sam`. You can adjust the first part by adding another parameter: `redis_key`. Don't bother with this unless you have a good reason to change it.
+>>>>>>> ac7e39ca3fa6623a079d0adbd490547079625995
 
 A note on schemas: while we provide support for jsonschema (and that was the driving force behind the creation of this package), you don't have to use it -- as the above example illustrates, you don't need to create a `schema` key. If no `schema` is passed in, it does not perform the validation step on `.save()` -- otherwise, it validates the data against the schema every time `.save()` is called.
 
