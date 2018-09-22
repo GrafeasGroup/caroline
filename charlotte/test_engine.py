@@ -4,6 +4,7 @@ from unittest.mock import patch
 # noinspection PyUnresolvedReferences
 import elasticsearch
 import pytest
+
 # noinspection PyUnresolvedReferences
 import redis
 
@@ -66,5 +67,15 @@ def test_required_default():
 
         class x(Base):
             redis_conn = MagicMock()
+
+        y = x("asdf")
+
+
+def test_multiple_dbs_configured():
+    with pytest.raises(CharlotteConfigurationError):
+
+        class x(Base):
+            redis_conn = MagicMock()
+            es_conn = MagicMock()
 
         y = x("asdf")
