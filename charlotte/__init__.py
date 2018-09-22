@@ -1,8 +1,7 @@
 import logging
 
-
+from charlotte.config import config
 from charlotte.engine import Base as Prototype
-from charlotte.engine import config
 from charlotte.errors import *
 
 __all__ = [

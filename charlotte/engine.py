@@ -1,37 +1,13 @@
-import json
 import logging
-import os
 
-import redis
 from jsonschema import validate
-import elasticsearch
-from elasticsearch import Elasticsearch
-from addict import Dict
 
+from charlotte.config import config
+from charlotte.databases.elasticsearch import elasticsearch_db
+from charlotte.databases.redis import redis_db
 from charlotte.errors import CharlotteConfigurationError
-from charlotte.errors import CharlotteConnectionError
 
 log = logging.getLogger(__name__)
-
-config = Dict()
-config.default_db = "elasticsearch"
-config.redis_default_url = "redis://localhost:6379/0"
-# TODO: accept additional config vars for elasticsearch besides just URL
-config.elasticsearch_default_url = "localhost:9200"
-
-# we don't actually connect to redis until we use the object; putting it here
-# means that we have the connection pool available if we need it.
-# Let's see if we have a Redis environment variable set!
-redis_env_addr = os.environ.get("CHARLOTTE_REDIS_URL", config.redis_default_url)
-pool = redis.ConnectionPool.from_url(redis_env_addr)
-
-# While we're at it, Elasticsearch doesn't use connection pools the same way
-# that Redis does, so we'll set up the client here and have all the active ES
-# models use it. We won't check to see if it's actually valid unless it's called.
-es_env_addr = os.environ.get(
-    "CHARLOTTE_ELASTICSEARCH_URL", config.elasticsearch_default_url
-)
-es_charlotte_connection = Elasticsearch(es_env_addr)
 
 
 def validate_config():
@@ -40,65 +16,6 @@ def validate_config():
             "Default DB has been changed to invalid option; use either "
             '"elasticsearch" or "redis"'
         )
-
-
-class redis_db(object):
-    def __init__(self, redis_conn=None):
-        try:
-            if redis_conn:
-                # We have something -- we'll run it through the same testing code to
-                # make sure that it works.
-                self.r = redis_conn
-            else:
-                self.r = redis.Redis(connection_pool=pool)
-            self.r.ping()
-        except redis.exceptions.ConnectionError:
-            raise CharlotteConnectionError("Unable to reach Redis.")
-        except Exception as e:
-            raise CharlotteConfigurationError(
-                "Caught {} -- please pass in an instantiated Redis "
-                "connection.".format(e)
-            )
-
-    def load(self, scope, key):
-        """
-        :return: Dict or None; the loaded information from Redis.
-        """
-        result = self.r.get(scope.db_key.format(key))
-        if not result:
-            log.debug("Key {} not found, returning None.".format(key))
-            return None
-
-        return json.loads(result.decode())
-
-    def save(self, scope):
-        self.r.set(scope.db_key.format(scope.id), json.dumps(scope.data))
-
-
-class elasticsearch_db(object):
-    def __init__(self, es_conn=None):
-        try:
-            if es_conn:
-                self.es = es_conn
-            else:
-                # we didn't get anything, so we'll piggyback off of the connection
-                # that charlotte creates
-                self.es = es_charlotte_connection
-            log.info("Trying to connect to Elasticsearch...")
-            self.es.info()
-            log.info("Connection complete!")
-        except elasticsearch.exceptions.ConnectionError:
-            # Elasticsearch client raises _a lot_ of nested errors in this instance.
-            # Nuke them all with extreme prejudice.
-            raise CharlotteConnectionError(
-                "Cannot reach Elasticsearch! Is it running?"
-            ) from None
-
-    def load(self, scope, key):
-        pass
-
-    def save(self, scope):
-        pass
 
 
 class Base(object):
@@ -164,10 +81,10 @@ class Base(object):
             self.db = elasticsearch_db()
 
         if not hasattr(self, "default"):
-
             raise CharlotteConfigurationError(
                 "Must have a default dict, even if it's just {}!"
             )
+
         if not isinstance(self.default, dict):
             raise CharlotteConfigurationError("default must be a dict!")
 
@@ -178,6 +95,9 @@ class Base(object):
             log.debug('No db_key passed; defaulting to key "{}"'.format(self.db_key))
         else:
             self.db_key = str(self.db_key)
+        # back up the original key in case we're using elasticsearch so that we can
+        # use it for the object type.
+        self.db_key_unformatted = self.db_key
         # note: this is a way of allowing us to only format the first field.
         # It'll render out as "::thing::{}" which we can then format again.
         self.db_key = "::{}::{{}}".format(self.db_key)
@@ -212,12 +132,13 @@ class Base(object):
         """
         :return: Dict or None; the loaded information from the db.
         """
+        # yes, we're passing the scope. You're not reading it wrong.
         return self.db.load(self, requested_key)
 
     def save(self):
         if self.validate():
+            # yep, passing scope again
             self.db.save(self)
-
 
     def update(self, key, value):
         self.data[key] = value
@@ -238,4 +159,4 @@ class Base(object):
         # returns a generator from the redis library that the developer can
         # handle how they wish -- this will return all of the keys matching
         # this model type currently stored in Redis.
-        return self.r.scan_iter("{}*".format(self.redis_key))
+        return self.db.all_keys(self)

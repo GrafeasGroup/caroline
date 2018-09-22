@@ -35,11 +35,12 @@ def test_default_loading(a, b):
 def test_redis_key_var(a, b):
     class x(Base):
         default = {"yo": "world"}
-        redis_key = "snarfleblat"
+        db_key = "snarfleblat"
 
     y = x("asdf")
 
-    assert y.redis_key == "::snarfleblat::{}"
+    assert y.db_key == "::snarfleblat::{}"
+    assert y.db_key_unformatted == "snarfleblat"
 
 
 @patch("redis.Redis")
