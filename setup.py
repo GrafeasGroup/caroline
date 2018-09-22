@@ -7,6 +7,8 @@ import re
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
+from charlotte import __version__
+
 
 class PyTest(TestCommand):
     user_options = [("pytest-args=", "a", "Arguments to pass to pytest")]
@@ -55,7 +57,7 @@ with open("requirements.txt") as f:
 
 setup(
     name="charlotte",
-    version="0.1.1",
+    version=__version__,
     description="A Redis-based JSON ODM with a memorable name.",
     long_description=long_description(),
     url="https://github.com/GrafeasGroup/charlotte",
