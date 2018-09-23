@@ -21,9 +21,10 @@ matrix:
 install:
   - pip install --process-dependency-links .[dev]
   - pip install codacy-coverage
+  - pip install pytest-cov
 
 script:
-  - python setup.py test
+  - pytest --cov charlotte
 
 after_success:
   - coverage xml
