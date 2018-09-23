@@ -37,21 +37,17 @@ def long_description():
 testing_deps = ["pytest", "pytest-cov"]
 dev_helper_deps = ["black"]
 
-requires = []
-dep_links = []
-# parse requirements file
-with open("requirements.txt") as f:
-    comment = re.compile("(^#.*$|\s+#.*$)")
-    for line in f.readlines():
-        line = line.strip()
-        line = comment.sub("", line)
-        if line:
-            if line.startswith("git+"):
-                dep_links.append(line)
-                if "#egg=" in line:
-                    requires.append(line.split("#egg=", 1)[1].replace("-", "=="))
-            else:
-                requires.append(line)
+REQUIRED = [
+    "redis",
+    "jsonschema",
+    "elasticsearch",
+    "addict",
+]
+
+# What packages are optional?
+EXTRAS = {
+    "dev": testing_deps + dev_helper_deps
+}
 
 setup(
     name="charlotte",
@@ -78,9 +74,8 @@ setup(
     zip_safe=True,
     cmdclass={"test": PyTest},
     test_suite="test",
-    extras_require={"dev": testing_deps + dev_helper_deps},
+    extras_require=EXTRAS,
     setup_requires=[],
     tests_require=testing_deps,
-    install_requires=requires,
-    dependency_links=dep_links,
+    install_requires=REQUIRED,
 )

@@ -1,6 +1,4 @@
 redis
-pytest
-pytest-cov
 jsonschema
 elasticsearch
 addict
