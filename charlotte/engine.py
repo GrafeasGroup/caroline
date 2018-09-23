@@ -79,7 +79,6 @@ class Base(object):
         if not hasattr(self, "db"):
             db_map = {"elasticsearch": elasticsearch_db(), "redis": redis_db()}
             try:
-                import ipdb; ipdb.set_trace()
                 self.db = db_map[config.default_db]
             except KeyError:
                 raise CharlotteConfigurationError(
@@ -87,7 +86,9 @@ class Base(object):
                     "points towards an invalid location. "
                     "Valid connections are: {}".format(", ".join([x for x in db_map]))
                 )
-            log.debug("No db connection passed; defaulting to {}".format(config.default_db))
+            log.debug(
+                "No db connection passed; defaulting to {}".format(config.default_db)
+            )
 
         if not hasattr(self, "default"):
             raise CharlotteConfigurationError(

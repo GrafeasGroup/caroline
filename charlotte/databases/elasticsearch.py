@@ -1,11 +1,7 @@
-import os
-import time
-
 import logging
 
 import elasticsearch
 from elasticsearch import Elasticsearch
-from elasticsearch.transport import Transport
 
 from charlotte.config import config
 from charlotte.config import es_env_addr
@@ -21,7 +17,9 @@ log = logging.getLogger(__name__)
 # if elasticsearch is not running; for a system that uses Redis only, then we want
 # it to fail quickly if a connection is not immediately detected. This can be
 # adjusted by changing the environment variable `CHARLOTTE_CONNECTION_TIMEOUT`.
-es_charlotte_connection = Elasticsearch(es_env_addr, timeout=config.connection_timeout, max_retries=0)
+es_charlotte_connection = Elasticsearch(
+    es_env_addr, timeout=config.connection_timeout, max_retries=0
+)
 
 
 class elasticsearch_db(object):
