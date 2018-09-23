@@ -55,20 +55,22 @@ with open("requirements.txt") as f:
 
 setup(
     name="charlotte",
-    version="0.2.0",
-    description="A Redis-based JSON ODM with a memorable name.",
+    version="0.4.0",
+    description="A key/value-based JSON ODM with a memorable name.",
     long_description=long_description(),
+    long_description_content_type="text/markdown",
     url="https://github.com/GrafeasGroup/charlotte",
     author="Grafeas Group, Ltd.",
     author_email="devs@grafeas.org",
     license="MIT",
     classifiers=[
         "Development Status :: 4 - Beta",
-        "Intended Audience :: End Users/Desktop",
+        "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
-        "Framework :: Pytest",
-        "Topic :: Database :: Front-Ends"
-        "Programming Language :: Python :: 3",
+        "Topic :: Database :: Front-Ends",
+        "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
     ],
     keywords="",

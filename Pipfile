@@ -7,6 +7,9 @@ ipdb = "*"
 pytest = "*"
 pytest-cov = "*"
 black = "*"
+setuptools = "*"
+wheel = "*"
+twine = "*"
 
 [packages]
 redis = "*"

@@ -76,6 +76,6 @@ def test_multiple_dbs_configured():
 
         class x(Base):
             redis_conn = MagicMock()
-            es_conn = MagicMock()
+            elasticsearch_conn = MagicMock()
 
         y = x("asdf")

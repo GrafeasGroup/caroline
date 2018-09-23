@@ -1,10 +1,13 @@
 import os
+import time
 
 import logging
 
 import elasticsearch
 from elasticsearch import Elasticsearch
+from elasticsearch.transport import Transport
 
+from charlotte.config import config
 from charlotte.config import es_env_addr
 from charlotte.errors import CharlotteConnectionError
 
@@ -13,7 +16,12 @@ log = logging.getLogger(__name__)
 # While we're at it, Elasticsearch doesn't use connection pools the same way
 # that Redis does, so we'll set up the client here and have all the active ES
 # models use it. We won't check to see if it's actually valid unless it's called.
-es_charlotte_connection = Elasticsearch(es_env_addr)
+
+# The timeout is also set extremely low because otherwise the library will hang
+# if elasticsearch is not running; for a system that uses Redis only, then we want
+# it to fail quickly if a connection is not immediately detected. This can be
+# adjusted by changing the environment variable `CHARLOTTE_CONNECTION_TIMEOUT`.
+es_charlotte_connection = Elasticsearch(es_env_addr, timeout=config.connection_timeout, max_retries=0)
 
 
 class elasticsearch_db(object):
@@ -40,7 +48,7 @@ class elasticsearch_db(object):
             result = self.es.get(
                 index="charlotte", doc_type=scope.db_key_unformatted, id=key
             )
-            # we don't need the whole response from ElasticSearch; we only need the
+            # we don't need the whole response from Elasticsearch; we only need the
             # body that we set.
             result = result.get("_source")
         except elasticsearch.exceptions.NotFoundError:

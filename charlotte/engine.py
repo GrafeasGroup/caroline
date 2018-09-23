@@ -77,8 +77,17 @@ class Base(object):
             self.db = elasticsearch_db(self.elasticsearch_conn)
 
         if not hasattr(self, "db"):
-            log.debug("No db connection passed; defaulting to Elasticsearch")
-            self.db = elasticsearch_db()
+            db_map = {"elasticsearch": elasticsearch_db(), "redis": redis_db()}
+            try:
+                import ipdb; ipdb.set_trace()
+                self.db = db_map[config.default_db]
+            except KeyError:
+                raise CharlotteConfigurationError(
+                    "Did not receive db connection in model and environment variable "
+                    "points towards an invalid location. "
+                    "Valid connections are: {}".format(", ".join([x for x in db_map]))
+                )
+            log.debug("No db connection passed; defaulting to {}".format(config.default_db))
 
         if not hasattr(self, "default"):
             raise CharlotteConfigurationError(
@@ -125,6 +134,9 @@ class Base(object):
     def __setitem__(self, key, value):
         self.data[key] = value
 
+    def __delitem__(self, key):
+        del self.data[key]
+
     def get(self, key, default_return=None):
         return self.data.get(key, default_return)
 
@@ -132,13 +144,11 @@ class Base(object):
         """
         :return: Dict or None; the loaded information from the db.
         """
-        # yes, we're passing the scope. You're not reading it wrong.
-        return self.db.load(self, requested_key)
+        return self.db.load(scope=self, key=requested_key)
 
     def save(self):
         if self.validate():
-            # yep, passing scope again
-            self.db.save(self)
+            self.db.save(scope=self)
 
     def update(self, key, value):
         self.data[key] = value
@@ -155,8 +165,36 @@ class Base(object):
             validate(self.data, self.schema)
         return True
 
+    def upgrade(self):
+        """
+        Use this when you've got existing keys in your db and you need to change
+        the defaults and the schema. This will merge the new fields with the
+        default values set in the model every time a key is loaded.
+        Upgrade-as-you-go, if you will.
+
+        :return: None
+        """
+        # first we add in all the new fields that may have been set in the default
+        # dict
+        for key in self.default:
+            if key in self.to_dict():
+                continue
+            self.update(key, self.default[key])
+
+        # now we nuke any additional fields that may have been removed from the
+        # default dict.
+        keys_to_remove = list()
+
+        for key in self.to_dict():
+            if key not in self.default:
+                keys_to_remove.append(key)
+
+        if len(keys_to_remove) > 0:
+            for k in keys_to_remove:
+                del self[k]
+
     def all_keys(self):
-        # returns a generator from the redis library that the developer can
-        # handle how they wish -- this will return all of the keys matching
-        # this model type currently stored in Redis.
+        # returns a generator that the developer can handle how they wish -- this
+        # will return all of the keys matching this model type currently stored in
+        # the db. Currently only works when using the Redis connection.
         return self.db.all_keys(self)
