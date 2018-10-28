@@ -5,7 +5,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Coverage/84632bae1d3f4dd8ad69cf90fd0a8d6b)](https://www.codacy.com/app/joe-kaufeld/charlotte?utm_source=github.com&utm_medium=referral&utm_content=GrafeasGroup/caroline&utm_campaign=Badge_Coverage)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
-A Redis-based JSON ODM with a memorable name.
+A key-value JSON ODM with a memorable name.
 
 ### What is caroline?
 Caroline is yet another way to store JSON data. It contains backends for Elasticsearch and Redis, and allows you to use both in the same project! Included in the box (and heavily recommended that you use) is jsonschema support.
@@ -77,9 +77,9 @@ class Cat(Prototype):
     
     default = {}
 ```
-NOTE: You cannot have more than one connection on your model! Each model can only work with one database; that being said, you _can_ have each model route to a different database if you want to and caroline with handle it for you. If you don't want to pass a specific connection with each model, we don't blame you; The default connection is Elasticsearch, but you can change that by setting the environment variable `caroline_DEFAULT_DB` to either "elasticsearch" or "redis". You can also import the caroline config directly and manually set the requested database as the default (`caroline.config.default_db = 'redis'`).
+NOTE: You cannot have more than one connection on your model! Each model can only work with one database; that being said, you _can_ have each model route to a different database if you want to and caroline with handle it for you. If you don't want to pass a specific connection with each model, we don't blame you; The default connection is Elasticsearch, but you can change that by setting the environment variable `CAROLINE_DEFAULT_DB` to either "elasticsearch" or "redis". You can also import the caroline config directly and manually set the requested database as the default (`caroline.config.default_db = "redis"`).
 
-There is currently not a way to change the ElasticSearch location, but you can set the Redis location by formatting your Redis address as a URL, (e.g. `redis://localhost:6379/0`) which caroline will pick up if you set it as the environment variable `caroline_REDIS_URL`.
+There is currently not a way to change the ElasticSearch location, but you can set the Redis location by formatting your Redis address as a URL, (e.g. `redis://localhost:6379/0`) which caroline will pick up if you set it as the environment variable `CAROLINE_REDIS_URL`.
 
 If time goes on and you need to upgrade your models, we have a plan for that! Just modify your model (add new fields or remove them), then load your keys as normal. Call `.upgrade()` on the object that you've retrieved from the database and caroline will force your existing data into the new model. THIS IS A DESTRUCTIVE CALL.
 
