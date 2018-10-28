@@ -97,20 +97,20 @@ class Base(object):
 
         if isinstance(self.db, str):
             if self.db in db_map:
-                log.debug(f'Overriding defaults with requested db base {self.db}')
+                log.debug(f"Overriding defaults with requested db base {self.db}")
                 self.db = db_map[self.db]()
             else:
                 raise CarolineConfigurationError(
-                    'The requested db {} is not available as an option. Usable '
-                    'options are: {}'.format(self.db, ", ".join([x for x in db_map]))
+                    "The requested db {} is not available as an option. Usable "
+                    "options are: {}".format(self.db, ", ".join([x for x in db_map]))
                 )
 
         if not hasattr(self, "default"):
             log.warning(
-                'Did not receive a default dict; no default attributes will be '
-                'applied to the model {}. Please define a `default` attribute '
-                'on your model in order for values to be assigned appropriately '
-                'on creation.'.format(self.__class__.__name__)
+                "Did not receive a default dict; no default attributes will be "
+                "applied to the model {}. Please define a `default` attribute "
+                "on your model in order for values to be assigned appropriately "
+                "on creation.".format(self.__class__.__name__)
             )
             self.default = {}
 

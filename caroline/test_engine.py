@@ -62,7 +62,7 @@ def test_update_methods(a):
     assert y.to_dict() == {"yo": "general kenobi"}
 
 
-@patch('caroline.engine.Base._load', return_value=None)
+@patch("caroline.engine.Base._load", return_value=None)
 def test_optional_default(a):
     class x(Base):
         redis_conn = MagicMock()
