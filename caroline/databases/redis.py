@@ -3,9 +3,9 @@ import logging
 
 import redis
 
-from charlotte.config import redis_env_addr
-from charlotte.errors import CharlotteConfigurationError
-from charlotte.errors import CharlotteConnectionError
+from caroline.config import redis_env_addr
+from caroline.errors import CarolineConfigurationError
+from caroline.errors import CarolineConnectionError
 
 log = logging.getLogger(__name__)
 
@@ -26,9 +26,9 @@ class redis_db(object):
                 self.r = redis.Redis(connection_pool=pool)
             self.r.ping()
         except redis.exceptions.ConnectionError:
-            raise CharlotteConnectionError("Unable to reach Redis.")
+            raise CarolineConnectionError("Unable to reach Redis.")
         except Exception as e:
-            raise CharlotteConfigurationError(
+            raise CarolineConfigurationError(
                 "Caught {} -- please pass in an instantiated Redis "
                 "connection.".format(e)
             )
@@ -45,7 +45,7 @@ class redis_db(object):
         return json.loads(result.decode())
 
     def save(self, scope):
-        self.r.set(scope.db_key.format(scope.id), json.dumps(scope.data))
+        self.r.set(scope.db_key.format(scope.record_id), json.dumps(scope.data))
 
     def all_keys(self, scope):
         return self.r.scan_iter("{}*".format(scope.db_key))

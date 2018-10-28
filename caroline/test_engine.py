@@ -8,11 +8,11 @@ import pytest
 # noinspection PyUnresolvedReferences
 import redis
 
-from charlotte.engine import Base
-from charlotte.errors import CharlotteConfigurationError
+from caroline.engine import Base
+from caroline.errors import CarolineConfigurationError
 
 
-@patch("charlotte.engine.Base._load", return_value={"hello": "world"})
+@patch("caroline.engine.Base._load", return_value={"hello": "world"})
 def test_generic_launch(a):
     class x(Base):
         redis_conn = MagicMock()
@@ -22,7 +22,7 @@ def test_generic_launch(a):
     assert y.to_dict() == {"hello": "world"}
 
 
-@patch("charlotte.engine.Base._load", return_value=None)
+@patch("caroline.engine.Base._load", return_value=None)
 def test_default_loading(a):
     class x(Base):
         redis_conn = MagicMock()
@@ -34,7 +34,7 @@ def test_default_loading(a):
     assert y.to_dict() == {"yo": "world"}
 
 
-@patch("charlotte.engine.Base._load", return_value=None)
+@patch("caroline.engine.Base._load", return_value=None)
 def test_redis_key_var(a):
     class x(Base):
         redis_conn = MagicMock()
@@ -47,7 +47,7 @@ def test_redis_key_var(a):
     assert y.db_key_unformatted == "snarfleblat"
 
 
-@patch("charlotte.engine.Base._load", return_value=None)
+@patch("caroline.engine.Base._load", return_value=None)
 def test_update_methods(a):
     class x(Base):
         redis_conn = MagicMock()
@@ -62,17 +62,17 @@ def test_update_methods(a):
     assert y.to_dict() == {"yo": "general kenobi"}
 
 
-def test_required_default():
-    with pytest.raises(CharlotteConfigurationError):
+@patch('caroline.engine.Base._load', return_value=None)
+def test_optional_default(a):
+    class x(Base):
+        redis_conn = MagicMock()
 
-        class x(Base):
-            redis_conn = MagicMock()
-
-        y = x("asdf")
+    y = x("asdf")
+    assert y.default == {}
 
 
 def test_multiple_dbs_configured():
-    with pytest.raises(CharlotteConfigurationError):
+    with pytest.raises(CarolineConfigurationError):
 
         class x(Base):
             redis_conn = MagicMock()

@@ -2,17 +2,17 @@ import logging
 
 from jsonschema import validate
 
-from charlotte.config import config
-from charlotte.databases.elasticsearch import elasticsearch_db
-from charlotte.databases.redis import redis_db
-from charlotte.errors import CharlotteConfigurationError
+from caroline.config import config
+from caroline.databases.elasticsearch import elasticsearch_db
+from caroline.databases.redis import redis_db
+from caroline.errors import CarolineConfigurationError
 
 log = logging.getLogger(__name__)
 
 
 def validate_config():
     if config.default_db not in ["redis", "elasticsearch"]:
-        raise CharlotteConfigurationError(
+        raise CarolineConfigurationError(
             "Default DB has been changed to invalid option; use either "
             '"elasticsearch" or "redis"'
         )
@@ -20,9 +20,9 @@ def validate_config():
 
 class Base(object):
     """
-    Welcome to the weirdness that is Charlotte.
+    Welcome to the weirdness that is Caroline.
 
-    Charlotte is a ODM that specializes in all things json, because
+    Caroline is a ODM that specializes in all things json, because
     frankly I really don't like working with ORMs and the way that they're
     normally handled in Python (thanks, Django!).
 
@@ -35,7 +35,14 @@ class Base(object):
     That's it. No models, no craziness, minor setup time, and hopefully pretty
     simple to use. That's the goal, anyways.
 
-    Why Charlotte? I like Charlotte best. Because it's good. Good Charlotte.
+    Why Caroline? Because we can. Also, here's a song list of tracks you may
+    or may not already be familiar with, arranged by release year!
+
+    * Caroline - Steep Canyon Rangers (2017)
+    * Caroline I See You - James Taylor (2002)
+    * Caroline - Fleetwood Mac (1987)
+    * Oh Caroline - Cheap Trick (1977)
+    * Sweet Caroline - Neil Diamond (1965)
     """
 
     def __init__(self, record_id):
@@ -55,7 +62,7 @@ class Base(object):
             elasticsearch_conn = e
 
         The schema is technically optional, but we want people to use it.
-        Why else use a library like Charlotte?
+        Why else use a library like Caroline?
 
         Because the user creates the class with those variables defined,
         we can structure the parent around them. Fun!
@@ -63,10 +70,12 @@ class Base(object):
         # First things first! What DB are we using? Gonna do this the long
         # way for legibility purposes and because the hasattr call is not
         # expensive.
+        db_map = {"elasticsearch": elasticsearch_db, "redis": redis_db}
+
         if hasattr(self, "redis_conn") and hasattr(self, "elasticsearch_conn"):
-            raise CharlotteConfigurationError(
+            raise CarolineConfigurationError(
                 "Received both a Redis connection and an Elasticsearch connection. "
-                "You need to use one or the other -- Charlotte does not support "
+                "You need to use one or the other -- Caroline does not support "
                 "handling both at the same time."
             )
 
@@ -77,26 +86,36 @@ class Base(object):
             self.db = elasticsearch_db(self.elasticsearch_conn)
 
         if not hasattr(self, "db"):
-            db_map = {"elasticsearch": elasticsearch_db(), "redis": redis_db()}
             try:
-                self.db = db_map[config.default_db]
+                self.db = db_map[config.default_db]()
             except KeyError:
-                raise CharlotteConfigurationError(
+                raise CarolineConfigurationError(
                     "Did not receive db connection in model and environment variable "
                     "points towards an invalid location. "
                     "Valid connections are: {}".format(", ".join([x for x in db_map]))
                 )
-            log.debug(
-                "No db connection passed; defaulting to {}".format(config.default_db)
-            )
+
+        if isinstance(self.db, str):
+            if self.db in db_map:
+                log.debug(f'Overriding defaults with requested db base {self.db}')
+                self.db = db_map[self.db]()
+            else:
+                raise CarolineConfigurationError(
+                    'The requested db {} is not available as an option. Usable '
+                    'options are: {}'.format(self.db, ", ".join([x for x in db_map]))
+                )
 
         if not hasattr(self, "default"):
-            raise CharlotteConfigurationError(
-                "Must have a default dict, even if it's just {}!"
+            log.warning(
+                'Did not receive a default dict; no default attributes will be '
+                'applied to the model {}. Please define a `default` attribute '
+                'on your model in order for values to be assigned appropriately '
+                'on creation.'.format(self.__class__.__name__)
             )
+            self.default = {}
 
         if not isinstance(self.default, dict):
-            raise CharlotteConfigurationError("default must be a dict!")
+            raise CarolineConfigurationError("default must be a dict!")
 
         if not hasattr(self, "db_key"):
             # if we don't have a db_key passed in, then we use the name of the

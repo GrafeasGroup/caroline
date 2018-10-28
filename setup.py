@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
+import codecs
 import os
 import sys
-import codecs
-import re
+
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
@@ -50,12 +50,12 @@ EXTRAS = {
 }
 
 setup(
-    name="charlotte",
+    name="caroline",
     version="0.4.0",
     description="A key/value-based JSON ODM with a memorable name.",
     long_description=long_description(),
     long_description_content_type="text/markdown",
-    url="https://github.com/GrafeasGroup/charlotte",
+    url="https://github.com/GrafeasGroup/caroline",
     author="Grafeas Group, Ltd.",
     author_email="devs@grafeas.org",
     license="MIT",

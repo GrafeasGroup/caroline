@@ -24,7 +24,7 @@ install:
   - pip install pytest-cov
 
 script:
-  - pytest --cov charlotte
+  - pytest --cov caroline
 
 after_success:
   - coverage xml
