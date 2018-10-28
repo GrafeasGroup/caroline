@@ -10,6 +10,7 @@ black = "*"
 setuptools = "*"
 wheel = "*"
 twine = "*"
+pre-commit = "*"
 
 [packages]
 redis = "*"
