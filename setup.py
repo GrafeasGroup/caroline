@@ -37,21 +37,14 @@ def long_description():
 testing_deps = ["pytest", "pytest-cov"]
 dev_helper_deps = ["black"]
 
-REQUIRED = [
-    "redis",
-    "jsonschema",
-    "elasticsearch",
-    "addict",
-]
+REQUIRED = ["redis", "jsonschema", "elasticsearch", "addict"]
 
 # What packages are optional?
-EXTRAS = {
-    "dev": testing_deps + dev_helper_deps
-}
+EXTRAS = {"dev": testing_deps + dev_helper_deps}
 
 setup(
     name="caroline",
-    version="0.4.0",
+    version="0.4.1",
     description="A key/value-based JSON ODM with a memorable name.",
     long_description=long_description(),
     long_description_content_type="text/markdown",
