@@ -23,8 +23,7 @@ install:
   - wget https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py
   - python get-poetry.py --preview -y
   - source $HOME/.poetry/env
-  - poetry install -v
-  - poetry add codacy-coverage pytest-cov
+  - poetry install -v --no-dev --extras ci
 
 script:
   - pytest --cov caroline
