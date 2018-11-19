@@ -19,9 +19,11 @@ matrix:
     - python: nightly
 
 install:
-  - pip install --process-dependency-links .[dev]
-  - pip install codacy-coverage
-  - pip install pytest-cov
+  - pip install pip -U
+  - wget https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py
+  - python get-poetry.py --preview -y
+  - source $HOME/.poetry/env
+  - poetry install -v --no-dev --extras ci
 
 script:
   - pytest --cov caroline

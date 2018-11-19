@@ -4,6 +4,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/84632bae1d3f4dd8ad69cf90fd0a8d6b)](https://www.codacy.com/app/joe-kaufeld/caroline?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=GrafeasGroup/caroline&amp;utm_campaign=Badge_Grade)
 [![Codacy Badge](https://api.codacy.com/project/badge/Coverage/84632bae1d3f4dd8ad69cf90fd0a8d6b)](https://www.codacy.com/app/joe-kaufeld/charlotte?utm_source=github.com&utm_medium=referral&utm_content=GrafeasGroup/caroline&utm_campaign=Badge_Coverage)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
+[![Packaged with Poetry](https://img.shields.io/badge/packaged%20with-poetry-blue.svg)](https://poetry.eustace.io)
 
 A key-value JSON ODM with a memorable name.
 

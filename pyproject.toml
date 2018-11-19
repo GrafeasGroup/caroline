@@ -1,0 +1,44 @@
+[tool.poetry]
+name = "caroline"
+version = "0.4.2"
+description = "A key/value-based JSON ODM with a memorable name."
+authors = ["Grafeas Group Ltd. <devs@grafeas.org>"]
+license = "MIT"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Database :: Front-Ends",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+]
+readme = "README.md"
+homepage = "https://www.grafeas.org"
+repository = "https://github.com/grafeasgroup/caroline"
+keywords = ["redis", "elasticsearch", "odm"]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+redis = "^2.10"
+jsonschema = "^2.6"
+elasticsearch = "^6.3"
+addict = "^2.2"
+codacy-coverage = {version = "^1.3",optional = true}
+pytest-cov = {version = "^2.6",optional = true}
+
+
+[tool.poetry.dev-dependencies]
+pytest = "^3.10"
+pytest-cov = "^2.6"
+black = "^18.3-alpha.0"
+ipdb = "^0.11.0"
+pre-commit = "^1.12"
+flake8 = "^3.6"
+
+[tool.poetry.extras]
+ci = ["codacy-coverage", "pytest-cov"]
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
