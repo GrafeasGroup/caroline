@@ -16,6 +16,8 @@ pool = redis.ConnectionPool.from_url(redis_env_addr)
 
 
 class redis_db(object):
+    name = "Redis"
+
     def __init__(self, redis_conn=None):
         try:
             if redis_conn:

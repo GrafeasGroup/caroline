@@ -5,6 +5,7 @@ from jsonschema import validate
 from caroline.config import config
 from caroline.databases.elasticsearch import elasticsearch_db
 from caroline.databases.redis import redis_db
+from caroline.databases.jsondb import json_db
 from caroline.errors import CarolineConfigurationError
 
 log = logging.getLogger(__name__)
@@ -70,39 +71,59 @@ class Base(object):
         # First things first! What DB are we using? Gonna do this the long
         # way for legibility purposes and because the hasattr call is not
         # expensive.
-        db_map = {"elasticsearch": elasticsearch_db, "redis": redis_db}
 
-        if hasattr(self, "redis_conn") and hasattr(self, "elasticsearch_conn"):
+        db_map = {
+            "elasticsearch": {
+                "conn": "elasticsearch_conn",
+                "service": elasticsearch_db,
+            },
+            "redis": {"conn": "redis_conn", "service": redis_db},
+            "json": {"conn": "json_path", "service": json_db},
+        }
+
+        if [hasattr(self, db_map[x]["conn"]) for x in db_map].count(True) > 1:
+            service_names = [
+                hasattr(self, db_map[x]["service"].name)
+                for x in db_map
+                if hasattr(self, db_map[x]["conn"]) is True
+            ]
             raise CarolineConfigurationError(
-                "Received both a Redis connection and an Elasticsearch connection. "
-                "You need to use one or the other -- Caroline does not support "
-                "handling both at the same time."
+                f"Received the following service connection requests: {', '.join(service_names)}."
+                f" You need to use only one -- Caroline does not support"
+                f" handling multiples at the same time."
             )
 
         if hasattr(self, "redis_conn"):
             self.db = redis_db(self.redis_conn)
 
-        if hasattr(self, "elasticsearch_conn"):
+        elif hasattr(self, "elasticsearch_conn"):
             self.db = elasticsearch_db(self.elasticsearch_conn)
+
+        elif hasattr(self, "json_path"):
+            self.db = json_db(self.json_path)
 
         if not hasattr(self, "db"):
             try:
-                self.db = db_map[config.default_db]()
+                self.db = db_map[config.default_db]["service"]()
             except KeyError:
                 raise CarolineConfigurationError(
                     "Did not receive db connection in model and environment variable "
                     "points towards an invalid location. "
-                    "Valid connections are: {}".format(", ".join([x for x in db_map]))
+                    "Valid connections are: {}".format(
+                        ", ".join([db_map[x]["conn"] for x in db_map])
+                    )
                 )
 
         if isinstance(self.db, str):
             if self.db in db_map:
                 log.debug(f"Overriding defaults with requested db base {self.db}")
-                self.db = db_map[self.db]()
+                self.db = db_map[self.db]["service"]()
             else:
                 raise CarolineConfigurationError(
                     "The requested db {} is not available as an option. Usable "
-                    "options are: {}".format(self.db, ", ".join([x for x in db_map]))
+                    "options are: {}".format(
+                        self.db, ", ".join([db_map[x]["conn"] for x in db_map])
+                    )
                 )
 
         if not hasattr(self, "default"):
