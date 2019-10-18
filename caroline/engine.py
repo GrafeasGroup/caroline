@@ -83,7 +83,7 @@ class Base(object):
 
         if [hasattr(self, db_map[x]["conn"]) for x in db_map].count(True) > 1:
             service_names = [
-                hasattr(self, db_map[x]["service"].name)
+                db_map[x]["service"].name
                 for x in db_map
                 if hasattr(self, db_map[x]["conn"]) is True
             ]
