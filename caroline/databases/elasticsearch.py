@@ -23,6 +23,8 @@ es_caroline_connector = Elasticsearch(
 
 
 class elasticsearch_db(object):
+    name = "Elasticsearch"
+
     def __init__(self, es_conn=None):
         try:
             if es_conn:
